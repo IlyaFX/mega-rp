@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+compileJava.options.encoding = 'UTF-8'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+dependencies {
+    compile group: 'org.reflections', name: 'reflections', version: '0.9.11'
+    annotationProcessor 'org.projectlombok:lombok:1.18.12'
+    compileOnly 'org.projectlombok:lombok:1.18.12'
+    compileOnly files("libs/paper.jar")
+    compile group: 'org.jsoup', name: 'jsoup', version: '1.13.1'
+    compile group: 'com.zaxxer', name: 'HikariCP', version: '3.4.5'
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.20'
+}
