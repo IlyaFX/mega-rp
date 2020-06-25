@@ -16,30 +16,31 @@ import java.util.List;
 @Setter
 public class RolePlayData {
 
-	private List<FractionData> fractionData;
+    private List<FractionData> fractionData;
 
-	@Getter
-	public static class AbilityData implements Ability {
+    @Getter
+    public static class AbilityData implements Ability {
 
-		private String id, name;
-		private List<String> permissions;
+        private String id, name;
+        private List<String> permissions;
 
-	}
+    }
 
-	@Getter
-	public static class FractionData implements Fraction {
+    @Getter
+    public static class FractionData implements Fraction {
 
-		private String id, name;
-		private List<Job> jobs;
+        private String id, name;
+        private List<Job> jobs;
 
-	}
+    }
 
-	@Getter
-	public static class JobData implements Job {
+    @Getter
+    public static class JobData implements Job {
 
-		private String id, name;
-		private List<Ability> abilities;
+        private String id, name;
+        private Fraction fraction;
+        private List<Ability> abilities;
 
-	}
+    }
 
 }

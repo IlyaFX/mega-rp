@@ -4,10 +4,12 @@ import java.util.List;
 
 public interface Job {
 
-	String getId();
+    String getId();
 
-	String getName();
+    String getName();
 
-	List<Ability> getAbilities();
+    Fraction getFraction();
+
+    List<Ability> getAbilities();
 
 }
