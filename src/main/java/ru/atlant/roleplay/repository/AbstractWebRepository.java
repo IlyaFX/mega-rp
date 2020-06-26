@@ -39,7 +39,7 @@ public abstract class AbstractWebRepository<T> extends WebRepository<T> {
 	}
 
 	private void reload() {
-		connect()
+		fetch()
 				.thenAccept(json -> {
 					if (!json.equals(oldValue)) {
 						update(DataUtils.GSON.fromJson(json, getClazz()));

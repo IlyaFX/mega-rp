@@ -4,11 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ru.atlant.roleplay.work.Ability;
-import ru.atlant.roleplay.work.Fraction;
 import ru.atlant.roleplay.work.Job;
 
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,30 +15,28 @@ import java.util.List;
 @Setter
 public class RolePlayData {
 
+    private List<AbilityData> abilities;
     private List<FractionData> fractionData;
+    private Map<String, String> config;
 
-    @Getter
-    public static class AbilityData implements Ability {
+    public static class AbilityData {
 
         private String id, name;
         private List<String> permissions;
 
     }
 
-    @Getter
-    public static class FractionData implements Fraction {
+    public static class FractionData {
 
         private String id, name;
         private List<Job> jobs;
 
     }
 
-    @Getter
-    public static class JobData implements Job {
+    public static class JobData {
 
         private String id, name;
-        private Fraction fraction;
-        private List<Ability> abilities;
+        private List<String> abilities;
 
     }
 
