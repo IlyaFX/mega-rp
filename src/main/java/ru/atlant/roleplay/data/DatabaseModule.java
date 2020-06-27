@@ -9,7 +9,7 @@ import ru.atlant.roleplay.data.factory.AsyncQueryFactory;
 import ru.atlant.roleplay.data.factory.SyncQueryFactory;
 import ru.atlant.roleplay.module.Module;
 import ru.atlant.roleplay.module.ModuleFactory;
-import ru.atlant.roleplay.util.ExecutorUtils;
+import ru.atlant.roleplay.util.ExecutorUtil;
 
 import java.util.function.Consumer;
 
@@ -40,7 +40,7 @@ public class DatabaseModule implements Module {
 		HikariDataSource dataSource = new HikariDataSource(config);
 
 		this.sync = new SyncQueryFactory(dataSource, CATCHER);
-		this.async = new AsyncQueryFactory(dataSource, CATCHER, ExecutorUtils.EXECUTOR);
+		this.async = new AsyncQueryFactory(dataSource, CATCHER, ExecutorUtil.EXECUTOR);
 	}
 
 	public SyncQueryFactory sync() {

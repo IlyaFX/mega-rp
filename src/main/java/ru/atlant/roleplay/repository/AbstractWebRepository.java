@@ -2,7 +2,7 @@ package ru.atlant.roleplay.repository;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
-import ru.atlant.roleplay.util.DataUtils;
+import ru.atlant.roleplay.util.DataUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +42,7 @@ public abstract class AbstractWebRepository<T> extends WebRepository<T> {
 		fetch()
 				.thenAccept(json -> {
 					if (!json.equals(oldValue)) {
-						update(DataUtils.GSON.fromJson(json, getClazz()));
+						update(DataUtil.GSON.fromJson(json, getClazz()));
 						oldValue = json;
 					}
 				})

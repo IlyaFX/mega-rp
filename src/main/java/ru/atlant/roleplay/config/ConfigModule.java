@@ -45,12 +45,17 @@ public class ConfigModule implements Module {
         config = new ConcurrentHashMap<>(configuration);
     }
 
-    public <T> void subscribe(String key, Consumer<T> consumer, Function<String, T> valueTransformer, T def, boolean callNow) {
+    public ConfigModule subscribe(String key, Consumer<String> consumer, String def, boolean callNow) {
+        return subscribe(key, consumer, val -> val, def, callNow);
+    }
+
+    public <T> ConfigModule subscribe(String key, Consumer<T> consumer, Function<String, T> valueTransformer, T def, boolean callNow) {
         ConfigSubscriber<T> subscriber = new ConfigSubscriber<>(key, consumer, valueTransformer, def);
         subscribesMap.computeIfAbsent(key, __ -> new ArrayList<>()).add(subscriber);
         if (callNow) {
             executeUpdate(subscriber, config.get(key));
         }
+        return this;
     }
 
     private void executeUpdate(ConfigSubscriber subscriber, String value) {

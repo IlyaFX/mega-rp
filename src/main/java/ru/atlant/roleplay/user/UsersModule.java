@@ -3,9 +3,14 @@ package ru.atlant.roleplay.user;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.scheduler.BukkitTask;
 import ru.atlant.roleplay.RolePlay;
+import ru.atlant.roleplay.config.ConfigModule;
 import ru.atlant.roleplay.data.DatabaseModule;
 import ru.atlant.roleplay.data.QueryResult;
 import ru.atlant.roleplay.event.EventExecutorModule;
@@ -16,12 +21,12 @@ import ru.atlant.roleplay.work.Fraction;
 import ru.atlant.roleplay.work.Job;
 import ru.atlant.roleplay.work.WorksModule;
 
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 @RequiredArgsConstructor
-@LoadAfter(clazz = {DatabaseModule.class, EventExecutorModule.class, WorksModule.class})
+@LoadAfter(clazz = {DatabaseModule.class, EventExecutorModule.class, WorksModule.class, ConfigModule.class})
 public class UsersModule implements Module {
 
     private static final String CREATE_USER_FRACTIONS_TABLE = "CREATE TABLE IF NOT EXISTS `user_fractions` (`user` varchar(36) NOT NULL, `fraction` varchar(50) NOT NULL, `job` varchar(50) NOT NULL, PRIMARY KEY(`user`))  ENGINE=InnoDB DEFAULT CHARSET=utf8;";
@@ -37,11 +42,27 @@ public class UsersModule implements Module {
 
     private DatabaseModule database;
 
-    private final Map<UUID, UserData> usersMap = new ConcurrentHashMap<>(4);
+    private final Map<UUID, UserData> usersMap = new ConcurrentHashMap<>();
+
+    private final List<DataSubscriber> subscribes = new ArrayList<>();
+
+    private BukkitTask starsTask;
 
     @Override
     public void onEnable() {
         this.database = registry.get(DatabaseModule.class);
+        registry.get(ConfigModule.class)
+                .subscribe("star-expiration-time", minutes -> {
+                    if (starsTask != null)
+                        starsTask.cancel();
+                    long ticks = minutes * 60 * 20;
+                    starsTask = Bukkit.getScheduler().runTaskTimer(rolePlay, () -> {
+                        Bukkit.getOnlinePlayers().stream().map(player -> dataUnsafe(player.getUniqueId())).filter(data -> data.getStars() > 0).forEach(data -> {
+                            data.setStars(data.getStars() - 1);
+                            notify(data);
+                        });
+                    }, ticks, ticks);
+                }, Integer::parseInt, 10, true);
         database.sync().unsafeUpdate(CREATE_USER_FRACTIONS_TABLE);
         database.sync().unsafeUpdate(CREATE_USER_VIOLATIONS_TABLE);
         EventExecutorModule events = registry.get(EventExecutorModule.class);
@@ -60,10 +81,10 @@ public class UsersModule implements Module {
                 if (res.isEmpty()) {
                     replaceFraction(uid, works.getDefaultFraction(), works.getDefaultJob());
                     replaceViolation(uid, 0, 0);
-                    data = new UserData(works.getDefaultJob(), 0, 0);
+                    data = new UserData(uid, works.getDefaultJob(), 0, 0);
                 } else {
                     QueryResult.SQLSection section = res.all().stream().findFirst().get();
-                    data = new UserData(works.find(section.lookupValue("fraction"), section.lookupValue("job")), section.lookupValue("stars"), Long.parseLong(section.lookupValue("prison")));
+                    data = new UserData(uid, works.find(section.lookupValue("fraction"), section.lookupValue("job")), section.lookupValue("stars"), Long.parseLong(section.lookupValue("prison")));
                 }
                 usersMap.put(uid, data);
             } catch (Exception ex) {
@@ -72,9 +93,26 @@ public class UsersModule implements Module {
                 event.setKickMessage("Не удалось загрузить информацию о игроке. Зайдите чуть позже! :з");
             }
         }, EventPriority.MONITOR, true);
+        events.registerListener(PlayerJoinEvent.class, event -> {
+            UserData data = dataUnsafe(event.getPlayer().getUniqueId());
+            subscribes.stream().filter(DataSubscriber::isHandleJoin).forEach(subscriber -> subscriber.getConsumer().accept(data));
+        }, EventPriority.MONITOR, true);
+    }
+
+    public UsersModule subscribe(Consumer<UserData> consumer, boolean handleJoin) {
+        subscribes.add(new DataSubscriber(consumer, handleJoin));
+        return this;
     }
 
     public void replaceViolation(UUID user, int stars, long prisonTimeStamp) {
+        data(user).ifPresent(data -> {
+            int oldStars = data.getStars();
+            long oldStamp = data.getPrison();
+            data.setPrison(prisonTimeStamp);
+            data.setStars(stars);
+            if (oldStars != stars || oldStamp != prisonTimeStamp)
+                notify(data);
+        });
         database.async().prepareUpdate(REPLACE_USER_VIOLATION, ps -> {
             try {
                 ps.setString(1, user.toString());
@@ -87,6 +125,12 @@ public class UsersModule implements Module {
     }
 
     public void replaceFraction(UUID user, Fraction fraction, Job job) {
+        data(user).ifPresent(data -> {
+            Job oldJob = data.getJob();
+            data.setJob(job);
+            if (!oldJob.getFraction().getId().equals(job.getFraction().getId()) || !oldJob.getId().equals(job.getId()))
+                notify(data);
+        });
         database.async().prepareUpdate(REPLACE_USER_FRACTION, ps -> {
             try {
                 ps.setString(1, user.toString());
@@ -98,13 +142,40 @@ public class UsersModule implements Module {
         });
     }
 
+    private void notify(UserData data) {
+        subscribes.forEach(subscribe -> subscribe.getConsumer().accept(data));
+    }
+
+    public Optional<UserData> data(UUID user) {
+        return Optional.ofNullable(dataUnsafe(user));
+    }
+
+    public UserData dataUnsafe(UUID user) {
+        return usersMap.get(user);
+    }
+
     @AllArgsConstructor
     @Getter
+    @Setter
     public static class UserData {
 
+        private UUID user;
         private Job job;
         private int stars;
         private long prison;
+
+        public boolean inPrison() {
+            return prison > System.currentTimeMillis();
+        }
+
+    }
+
+    @AllArgsConstructor
+    @Getter
+    private static final class DataSubscriber {
+
+        private final Consumer<UserData> consumer;
+        private final boolean handleJoin;
 
     }
 
