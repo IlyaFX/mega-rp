@@ -31,4 +31,5 @@ dependencies {
     compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.20'
     compile 'fr.minuskube.inv:smart-invs:1.2.7'
     compile files("libs/brigadier-1.0.0-SNAPSHOT.jar")
+    compileOnly files("libs/Vault.jar")
 }

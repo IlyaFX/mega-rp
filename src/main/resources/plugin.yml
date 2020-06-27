@@ -2,3 +2,5 @@ name: RolePlay
 description: Atlant RolePlay
 version: '1.0'
 main: ru.atlant.roleplay.RolePlay
+softdepend:
+  - Vault

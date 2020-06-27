@@ -26,8 +26,18 @@ public class PrisonModule implements Module {
         ConfigModule config = registry.get(ConfigModule.class);
         config
                 .subscribe("prison-location", loc -> prisonLocation = loc, DataUtil::locationFromString, new Location(Bukkit.getWorlds().get(0), 0, 120, 0), true);
-        users.subscribe(data -> {
-            // check for prison
+        users.subscribe((old, data) -> {
+            if (old == null && data.getPrison() > System.currentTimeMillis()) {
+                // TODO: player joined, teleport to prison, set board, etc
+            }
+            if (old == null)
+                return;
+            if (old.getPrison() > System.currentTimeMillis() && data.getPrison() < System.currentTimeMillis()) {
+                // TODO: player unarrested
+            }
+            if (old.getPrison() < System.currentTimeMillis() && data.getPrison() > System.currentTimeMillis()) {
+                // TODO: player arrested
+            }
         }, true);
         // scheduler (distance to prison and teleport))
     }

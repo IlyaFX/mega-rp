@@ -23,7 +23,7 @@ import ru.atlant.roleplay.work.WorksModule;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 @RequiredArgsConstructor
 @LoadAfter(clazz = {DatabaseModule.class, EventExecutorModule.class, WorksModule.class, ConfigModule.class})
@@ -58,8 +58,9 @@ public class UsersModule implements Module {
                     long ticks = minutes * 60 * 20;
                     starsTask = Bukkit.getScheduler().runTaskTimer(rolePlay, () -> {
                         Bukkit.getOnlinePlayers().stream().map(player -> dataUnsafe(player.getUniqueId())).filter(data -> data.getStars() > 0).forEach(data -> {
+                            UserData old = data.clone();
                             data.setStars(data.getStars() - 1);
-                            notify(data);
+                            notify(old, data);
                         });
                     }, ticks, ticks);
                 }, Integer::parseInt, 10, true);
@@ -95,23 +96,24 @@ public class UsersModule implements Module {
         }, EventPriority.MONITOR, true);
         events.registerListener(PlayerJoinEvent.class, event -> {
             UserData data = dataUnsafe(event.getPlayer().getUniqueId());
-            subscribes.stream().filter(DataSubscriber::isHandleJoin).forEach(subscriber -> subscriber.getConsumer().accept(data));
+            subscribes.stream().filter(DataSubscriber::isHandleJoin).forEach(subscriber -> subscriber.getConsumer().accept(null, data));
         }, EventPriority.MONITOR, true);
     }
 
-    public UsersModule subscribe(Consumer<UserData> consumer, boolean handleJoin) {
+    public UsersModule subscribe(BiConsumer<UserData, UserData> consumer, boolean handleJoin) {
         subscribes.add(new DataSubscriber(consumer, handleJoin));
         return this;
     }
 
     public void replaceViolation(UUID user, int stars, long prisonTimeStamp) {
         data(user).ifPresent(data -> {
+            UserData old = data.clone();
             int oldStars = data.getStars();
             long oldStamp = data.getPrison();
             data.setPrison(prisonTimeStamp);
             data.setStars(stars);
             if (oldStars != stars || oldStamp != prisonTimeStamp)
-                notify(data);
+                notify(old, data);
         });
         database.async().prepareUpdate(REPLACE_USER_VIOLATION, ps -> {
             try {
@@ -126,10 +128,11 @@ public class UsersModule implements Module {
 
     public void replaceFraction(UUID user, Fraction fraction, Job job) {
         data(user).ifPresent(data -> {
+            UserData old = data.clone();
             Job oldJob = data.getJob();
             data.setJob(job);
             if (!oldJob.getFraction().getId().equals(job.getFraction().getId()) || !oldJob.getId().equals(job.getId()))
-                notify(data);
+                notify(old, data);
         });
         database.async().prepareUpdate(REPLACE_USER_FRACTION, ps -> {
             try {
@@ -142,8 +145,8 @@ public class UsersModule implements Module {
         });
     }
 
-    private void notify(UserData data) {
-        subscribes.forEach(subscribe -> subscribe.getConsumer().accept(data));
+    private void notify(UserData prev, UserData data) {
+        subscribes.forEach(subscribe -> subscribe.getConsumer().accept(prev, data));
     }
 
     public Optional<UserData> data(UUID user) {
@@ -168,13 +171,17 @@ public class UsersModule implements Module {
             return prison > System.currentTimeMillis();
         }
 
+        public UserData clone() {
+            return new UserData(user, job, stars, prison);
+        }
+
     }
 
     @AllArgsConstructor
     @Getter
     private static final class DataSubscriber {
 
-        private final Consumer<UserData> consumer;
+        private final BiConsumer<UserData, UserData> consumer;
         private final boolean handleJoin;
 
     }
