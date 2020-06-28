@@ -20,6 +20,7 @@ public class RolePlayData {
     private List<BoardData> boards;
     private Map<String, String> config;
 
+    @Getter
     public static class BoardData {
 
         private String id, title;
@@ -27,6 +28,7 @@ public class RolePlayData {
 
     }
 
+    @Getter
     public static class AbilityData {
 
         private String id, name;
@@ -34,6 +36,7 @@ public class RolePlayData {
 
     }
 
+    @Getter
     public static class FractionData {
 
         private String id, name;
@@ -41,6 +44,7 @@ public class RolePlayData {
 
     }
 
+    @Getter
     public static class JobData {
 
         private String id, name;
