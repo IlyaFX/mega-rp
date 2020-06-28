@@ -27,15 +27,15 @@ public class PrisonModule implements Module {
         config
                 .subscribe("prison-location", loc -> prisonLocation = loc, DataUtil::locationFromString, new Location(Bukkit.getWorlds().get(0), 0, 120, 0), true);
         users.subscribe((old, data) -> {
-            if (old == null && data.getPrison() > System.currentTimeMillis()) {
+            if (old == null && data.getPrison() > 0) {
                 // TODO: player joined, teleport to prison, set board, etc
             }
             if (old == null)
                 return;
-            if (old.getPrison() > System.currentTimeMillis() && data.getPrison() < System.currentTimeMillis()) {
+            if (old.getPrison() > 0 && data.getPrison() <= 0) {
                 // TODO: player unarrested
             }
-            if (old.getPrison() < System.currentTimeMillis() && data.getPrison() > System.currentTimeMillis()) {
+            if (old.getPrison() <= 0 && data.getPrison() > 0) {
                 // TODO: player arrested
             }
         }, true);

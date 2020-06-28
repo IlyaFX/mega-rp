@@ -185,6 +185,6 @@ public class ArrestCommand implements Module {
     }
 
     private double unarrestPrice(UsersModule.UserData data) {
-        return unarrestPricePerMinute * (double) ((data.getPrison() - System.currentTimeMillis()) / 60000);
+        return unarrestPricePerMinute * (double) (data.getPrison() / 60000);
     }
 }

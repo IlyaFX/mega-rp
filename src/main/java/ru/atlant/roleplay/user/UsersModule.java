@@ -105,21 +105,21 @@ public class UsersModule implements Module {
         return this;
     }
 
-    public void replaceViolation(UUID user, int stars, long prisonTimeStamp) {
+    public void replaceViolation(UUID user, int stars, long prisonTime) {
         data(user).ifPresent(data -> {
             UserData old = data.clone();
             int oldStars = data.getStars();
             long oldStamp = data.getPrison();
-            data.setPrison(prisonTimeStamp);
+            data.setPrison(prisonTime);
             data.setStars(stars);
-            if (oldStars != stars || oldStamp != prisonTimeStamp)
+            if (oldStars != stars || oldStamp != prisonTime)
                 notify(old, data);
         });
         database.async().prepareUpdate(REPLACE_USER_VIOLATION, ps -> {
             try {
                 ps.setString(1, user.toString());
                 ps.setInt(2, stars);
-                ps.setLong(3, prisonTimeStamp);
+                ps.setLong(3, prisonTime);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -168,7 +168,7 @@ public class UsersModule implements Module {
         private long prison;
 
         public boolean inPrison() {
-            return prison > System.currentTimeMillis();
+            return prison > 0;
         }
 
         public UserData clone() {

@@ -17,7 +17,15 @@ public class RolePlayData {
 
     private List<AbilityData> abilities;
     private List<FractionData> fractionData;
+    private List<BoardData> boards;
     private Map<String, String> config;
+
+    public static class BoardData {
+
+        private String id, title;
+        private List<String> lines;
+
+    }
 
     public static class AbilityData {
 
