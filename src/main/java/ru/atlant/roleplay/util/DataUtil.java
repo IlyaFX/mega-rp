@@ -5,6 +5,8 @@ import lombok.experimental.UtilityClass;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Random;
 
 @UtilityClass
@@ -21,6 +23,18 @@ public class DataUtil {
             loc.setPitch(Float.parseFloat(arr[5]));
         }
         return loc;
+    }
+
+    public <T> ArrayList<T> fromIterableArray(Iterable<T> iterable) {
+        if (iterable instanceof ArrayList) {
+            return (ArrayList<T>) iterable;
+        }
+        if (iterable instanceof Collection) {
+            return new ArrayList<>((Collection) iterable);
+        }
+        ArrayList<T> list = new ArrayList<>();
+        for (T t : iterable) list.add(t);
+        return list;
     }
 
 }
