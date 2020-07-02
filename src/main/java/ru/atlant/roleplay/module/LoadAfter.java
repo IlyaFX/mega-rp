@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface LoadAfter {
 
-	Class<? extends Module>[] clazz();
+    Class<? extends Module>[] clazz();
 
 }

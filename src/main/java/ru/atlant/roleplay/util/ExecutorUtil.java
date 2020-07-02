@@ -6,11 +6,11 @@ import java.util.concurrent.TimeUnit;
 
 public class ExecutorUtil {
 
-	public static ThreadPoolExecutor EXECUTOR = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<>());
+    public static ThreadPoolExecutor EXECUTOR = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<>());
 
-	static {
-		EXECUTOR.allowCoreThreadTimeOut(true);
-		EXECUTOR.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-	}
+    static {
+        EXECUTOR.allowCoreThreadTimeOut(true);
+        EXECUTOR.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+    }
 
 }

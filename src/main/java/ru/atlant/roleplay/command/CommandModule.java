@@ -1,6 +1,7 @@
 package ru.atlant.roleplay.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.RequirementException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import lombok.Getter;
@@ -13,6 +14,7 @@ import ru.atlant.roleplay.event.EventExecutorModule;
 import ru.atlant.roleplay.module.LoadAfter;
 import ru.atlant.roleplay.module.Module;
 import ru.atlant.roleplay.module.ModuleRegistry;
+import ru.atlant.roleplay.util.FormatUtil;
 
 import java.util.UUID;
 
@@ -45,7 +47,9 @@ public class CommandModule implements Module {
                     try {
                         dispatcher.execute(message, p.getUniqueId());
                     } catch (CommandSyntaxException ex) {
-                        p.sendMessage(ex.getMessage());
+                        p.sendMessage(FormatUtil.error(ex.getMessage()));
+                    } catch (RequirementException ex) {
+                        p.sendMessage(FormatUtil.warn(ex.getMessage()));
                     } catch (Exception ex) {
                         ex.printStackTrace();
                         p.sendMessage(ex.getMessage());

@@ -8,6 +8,18 @@ import lombok.val;
 @UtilityClass
 public class FormatUtil {
 
+    public int MAX_STARS = 5;
+
+    public String starsFormat(int stars) {
+        String str = "§6";
+        for (int i = 0; i < MAX_STARS; i++) {
+            if (i == stars)
+                str += "§f";
+            str += "✪";
+        }
+        return str;
+    }
+
     public String pluralFormRu(int count, String form1, String form2, String form5) {
         count = count % 100;
         int count1 = count % 10;

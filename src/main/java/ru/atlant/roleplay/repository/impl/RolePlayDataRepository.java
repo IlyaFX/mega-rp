@@ -9,12 +9,12 @@ import java.util.concurrent.TimeUnit;
 @Getter
 public class RolePlayDataRepository extends AbstractWebRepository<RolePlayData> {
 
-	public RolePlayDataRepository(Plugin plugin, String url) {
-		super(plugin, url, TimeUnit.SECONDS, 30L);
-	}
+    public RolePlayDataRepository(Plugin plugin, String url) {
+        super(plugin, url, TimeUnit.SECONDS, 30L);
+    }
 
-	@Override
-	public Class<RolePlayData> getClazz() {
-		return RolePlayData.class;
-	}
+    @Override
+    public Class<RolePlayData> getClazz() {
+        return RolePlayData.class;
+    }
 }

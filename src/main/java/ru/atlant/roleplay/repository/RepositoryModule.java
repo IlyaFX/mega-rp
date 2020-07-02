@@ -10,15 +10,15 @@ import ru.atlant.roleplay.repository.impl.RolePlayDataRepository;
 @RequiredArgsConstructor
 public class RepositoryModule implements Module {
 
-	private final RolePlay rolePlay;
-	private final ModuleRegistry registry;
+    private final RolePlay rolePlay;
+    private final ModuleRegistry registry;
 
-	@Getter
-	private RolePlayDataRepository repository;
+    @Getter
+    private RolePlayDataRepository repository;
 
-	@Override
-	public void onEnable() {
-		this.repository = new RolePlayDataRepository(rolePlay, rolePlay.getConfig().getString("repository"));
-		this.repository.init();
-	}
+    @Override
+    public void onEnable() {
+        this.repository = new RolePlayDataRepository(rolePlay, rolePlay.getConfig().getString("repository"));
+        this.repository.init();
+    }
 }

@@ -4,10 +4,10 @@ import java.util.List;
 
 public interface Fraction {
 
-	String getId();
+    String getId();
 
-	String getName();
+    String getName();
 
-	List<Job> getJobs();
+    List<Job> getJobs();
 
 }

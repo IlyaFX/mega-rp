@@ -4,10 +4,10 @@ import java.util.List;
 
 public interface Ability {
 
-	String getId();
+    String getId();
 
-	String getName();
+    String getName();
 
-	List<String> getPermissions();
+    List<String> getPermissions();
 
 }

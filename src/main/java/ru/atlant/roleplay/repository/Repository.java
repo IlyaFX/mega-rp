@@ -4,6 +4,6 @@ import java.util.concurrent.CompletableFuture;
 
 public interface Repository<T> {
 
-	CompletableFuture<String> fetch();
+    CompletableFuture<String> fetch();
 
 }

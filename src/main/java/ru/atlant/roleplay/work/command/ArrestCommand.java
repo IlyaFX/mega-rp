@@ -1,5 +1,6 @@
 package ru.atlant.roleplay.work.command;
 
+import com.mojang.brigadier.CommandDispatcher;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.*;
@@ -7,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import ru.atlant.roleplay.RolePlay;
 import ru.atlant.roleplay.command.CommandModule;
+import ru.atlant.roleplay.command.requirement.RequirementCooldown;
 import ru.atlant.roleplay.command.requirement.RequirementPermission;
 import ru.atlant.roleplay.command.requirement.RequirementRequest;
 import ru.atlant.roleplay.command.type.TypeTime;
@@ -41,8 +43,12 @@ public class ArrestCommand implements Module {
     private String unarrestForcePermission;
     private double unarrestPricePerMinute;
     private double unarrestProcent;
+    private String addStarPermission;
+    private double addStarDistance;
 
     private UserRequester unarrestRequester;
+
+    private UserCooldown arrestCooldown, unarrestCooldown, addStarCooldown;
 
     @Override
     public void onEnable() {
@@ -58,13 +64,20 @@ public class ArrestCommand implements Module {
                 .subscribe("unarrest-distance", dis -> unarrestDistance = dis, Double::parseDouble, 10.0, true)
                 .subscribe("unarrest-requester", secs -> unarrestRequester = new UserRequester(TimeUnit.SECONDS, secs), Integer::parseInt, 60, true)
                 .subscribe("unarrest-price", price -> unarrestPricePerMinute = price, Double::parseDouble, 100.0, true)
-                .subscribe("unarrest-procent", proc -> unarrestProcent = proc / 100, Double::parseDouble, 50.0, true);
-        registry.get(CommandModule.class).getDispatcher().register(
+                .subscribe("unarrest-procent", proc -> unarrestProcent = proc / 100, Double::parseDouble, 50.0, true)
+                .subscribe("add-star-permission", perm -> addStarPermission = perm, "roleplay.addstar", true)
+                .subscribe("add-star-distance", dis -> addStarDistance = dis, Double::parseDouble, 10.0, true)
+                .subscribe("arrest-cooldown", secs -> arrestCooldown = new UserCooldown(TimeUnit.SECONDS, secs), Integer::parseInt, 30, true)
+                .subscribe("unarrest-cooldown", secs -> unarrestCooldown = new UserCooldown(TimeUnit.SECONDS, secs), Integer::parseInt, 30, true)
+                .subscribe("add-star-cooldown", secs -> addStarCooldown = new UserCooldown(TimeUnit.SECONDS, secs), Integer::parseInt, 30, true);
+        CommandDispatcher<UUID> commands = registry.get(CommandModule.class).getDispatcher();
+        commands.register(
                 literal("arrest")
-                        .requires(RequirementPermission.permission(arrestPermission))
                         .then(argument("Игрок", TypeUser.user(true))
                                 .executes(wrap(ctx -> {
                                     UUID source = ctx.getSource();
+                                    RequirementPermission.permission(source, arrestPermission);
+                                    RequirementCooldown.cooldown(arrestCooldown, source);
                                     UUID target = ctx.getArgument("Игрок", UUID.class);
                                     Player sourcePlayer = Bukkit.getPlayer(source), targetPlayer = Bukkit.getPlayer(target);
                                     UsersModule.UserData userData = users.dataUnsafe(target);
@@ -84,11 +97,12 @@ public class ArrestCommand implements Module {
                                     users.replaceViolation(target, 0, time);
                                     sourcePlayer.sendMessage(FormatUtil.fine("Игрок посажен в тюрьму"));
                                     System.out.println("ARREST EXECUTED! " + sourcePlayer.getName() + " > " + targetPlayer.getName());
+                                    arrestCooldown.put(source);
                                 }))
                                 .then(argument("Время", TypeTime.time(false))
-                                        .requires(RequirementPermission.permission(arrestForcePermission))
                                         .executes(wrap(ctx -> {
                                             UUID source = ctx.getSource();
+                                            RequirementPermission.permission(source, arrestForcePermission);
                                             UUID target = ctx.getArgument("Игрок", UUID.class);
                                             Player sourcePlayer = Bukkit.getPlayer(source);
                                             if (users.dataUnsafe(target).inPrison()) {
@@ -101,12 +115,12 @@ public class ArrestCommand implements Module {
                                             System.out.println("FORCE ARREST EXECUTED! " + sourcePlayer.getName() + " > " + Bukkit.getPlayer(target).getName() + " for " + time);
                                         }))))
         );
-        registry.get(CommandModule.class).getDispatcher().register(
+        commands.register(
                 literal("unarrest")
                         .then(literal("accept")
-                                .requires(RequirementRequest.request(unarrestRequester))
                                 .executes(wrap(ctx -> {
                                     UUID source = ctx.getSource();
+                                    RequirementRequest.request(unarrestRequester, source);
                                     UUID target = unarrestRequester.getAndInvalidate(source);
                                     Player sourcePlayer = Bukkit.getPlayer(source), targetPlayer = Bukkit.getPlayer(target);
                                     UsersModule.UserData data = users.dataUnsafe(source);
@@ -130,18 +144,19 @@ public class ArrestCommand implements Module {
                                     }
                                 })))
                         .then(literal("decline")
-                                .requires(RequirementRequest.request(unarrestRequester))
                                 .executes(wrap(ctx -> {
+                                    RequirementRequest.request(unarrestRequester, ctx.getSource());
                                     Player source = Bukkit.getPlayer(ctx.getSource());
                                     Player target = Bukkit.getPlayer(unarrestRequester.getAndInvalidate(ctx.getSource()));
                                     source.sendMessage(FormatUtil.fine("Вы отказались от услуг адвоката"));
                                     if (target != null)
                                         target.sendMessage(FormatUtil.warn("Игрок " + source.getName() + " отказался от ваших услуг"));
                                 })))
-                        .requires(RequirementPermission.permission(unarrestPermission))
                         .then(argument("Игрок", TypeUser.user(true))
                                 .executes(wrap(ctx -> {
                                     UUID source = ctx.getSource();
+                                    RequirementPermission.permission(source, unarrestPermission);
+                                    RequirementCooldown.cooldown(unarrestCooldown, source);
                                     UUID target = ctx.getArgument("Игрок", UUID.class);
                                     Player sourcePlayer = Bukkit.getPlayer(source), targetPlayer = Bukkit.getPlayer(target);
                                     UsersModule.UserData data = users.dataUnsafe(target);
@@ -180,6 +195,33 @@ public class ArrestCommand implements Module {
                                                     .append("      \n")
                                                     .append("==============").color(ChatColor.AQUA).create();
                                     targetPlayer.sendMessage(components);
+                                    unarrestCooldown.put(source);
+                                })))
+        );
+        commands.register(
+                literal("addstar")
+                        .then(argument("Игрок", TypeUser.user(true))
+                                .executes(wrap(ctx -> {
+                                    UUID source = ctx.getSource(), target = ctx.getArgument("Игрок", UUID.class);
+                                    RequirementPermission.permission(source, addStarPermission);
+                                    RequirementCooldown.cooldown(addStarCooldown, source);
+                                    Player sourcePlayer = Bukkit.getPlayer(source), targetPlayer = Bukkit.getPlayer(target);
+                                    if (WorldUtil.distance(sourcePlayer, targetPlayer) > addStarDistance) {
+                                        sourcePlayer.sendMessage(FormatUtil.error("Вы слишком далеко от игрока!"));
+                                        return;
+                                    }
+                                    UsersModule.UserData data = users.dataUnsafe(target);
+                                    if (data.inPrison()) {
+                                        sourcePlayer.sendMessage(FormatUtil.error("Игрок в тюрьме!"));
+                                        return;
+                                    }
+                                    if (data.getStars() >= FormatUtil.MAX_STARS) {
+                                        sourcePlayer.sendMessage(FormatUtil.error("У игрока максимальное количество звёзд! Арестуйте же его!"));
+                                        return;
+                                    }
+                                    users.replaceViolation(target, data.getStars() + 1, 0L);
+                                    sourcePlayer.sendMessage(FormatUtil.fine("Игроку выдана звезда розыска!"));
+                                    addStarCooldown.put(source);
                                 })))
         );
     }

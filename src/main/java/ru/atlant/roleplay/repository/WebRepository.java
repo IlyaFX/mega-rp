@@ -12,16 +12,16 @@ import java.util.concurrent.CompletionException;
 @Getter
 public abstract class WebRepository<T> implements Repository<T> {
 
-	private final String url;
+    private final String url;
 
-	@Override
-	public CompletableFuture<String> fetch() {
-		return CompletableFuture.supplyAsync(() -> {
-			try {
-				return Jsoup.connect(url).ignoreContentType(true).execute().body();
-			} catch (Exception ex) {
-				throw new CompletionException(ex);
-			}
-		}, ExecutorUtil.EXECUTOR);
-	}
+    @Override
+    public CompletableFuture<String> fetch() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return Jsoup.connect(url).ignoreContentType(true).execute().body();
+            } catch (Exception ex) {
+                throw new CompletionException(ex);
+            }
+        }, ExecutorUtil.EXECUTOR);
+    }
 }

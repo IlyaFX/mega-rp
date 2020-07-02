@@ -1,24 +1,16 @@
 package ru.atlant.roleplay.command.requirement;
 
+import com.mojang.brigadier.RequirementException;
 import ru.atlant.roleplay.util.Requester;
 
 import java.util.UUID;
-import java.util.function.Predicate;
 
-public class RequirementRequest implements Predicate<UUID> {
+public class RequirementRequest {
 
-    private final Requester<UUID, ?> requester;
-
-    public RequirementRequest(Requester<UUID, ?> requester) {
-        this.requester = requester;
+    public static void request(Requester<UUID, ?> requester, UUID user) {
+        if (requester.hasRequest(user))
+            return;
+        throw new RequirementException("У вас нет ожидающих заявок!");
     }
 
-    public static RequirementRequest request(Requester<UUID, ?> requester) {
-        return new RequirementRequest(requester);
-    }
-
-    @Override
-    public boolean test(UUID uuid) {
-        return requester.hasRequest(uuid);
-    }
 }

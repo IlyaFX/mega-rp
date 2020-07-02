@@ -15,6 +15,7 @@ import ru.atlant.roleplay.board.impl.IServerScoreboardObjective;
 import ru.atlant.roleplay.board.impl.SimpleBoardObjective;
 import ru.atlant.roleplay.board.provider.PlaceholderProvider;
 import ru.atlant.roleplay.board.provider.PlaceholdersAPIPlaceholderProvider;
+import ru.atlant.roleplay.board.provider.expansion.SimplePlaceholderAPIExpansion;
 import ru.atlant.roleplay.event.EventExecutorModule;
 import ru.atlant.roleplay.module.LoadAfter;
 import ru.atlant.roleplay.module.Module;
@@ -22,7 +23,10 @@ import ru.atlant.roleplay.module.ModuleRegistry;
 import ru.atlant.roleplay.repository.RepositoryModule;
 import ru.atlant.roleplay.repository.impl.RolePlayData;
 import ru.atlant.roleplay.repository.impl.RolePlayDataRepository;
+import ru.atlant.roleplay.user.UsersModule;
 import ru.atlant.roleplay.util.ExecutorUtil;
+import ru.atlant.roleplay.util.FormatUtil;
+import ru.atlant.roleplay.util.TimeUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
-@LoadAfter(clazz = {RepositoryModule.class, EventExecutorModule.class})
+@LoadAfter(clazz = {RepositoryModule.class, EventExecutorModule.class, UsersModule.class})
 public class ScoreBoardModule implements Module {
 
     private final RolePlay rolePlay;
@@ -56,6 +60,14 @@ public class ScoreBoardModule implements Module {
             Bukkit.shutdown();
             return;
         }
+        UsersModule users = registry.get(UsersModule.class);
+        Map<String, Function<Player, String>> placeholders = new HashMap<String, Function<Player, String>>() {{
+            put("job", (player) -> users.data(player.getUniqueId()).map(data -> data.getJob().getName()).orElse("Не имеется"));
+            put("fraction", (player) -> users.data(player.getUniqueId()).map(data -> data.getJob().getFraction().getName()).orElse("Не имеется"));
+            put("arrest_time", (player) -> users.data(player.getUniqueId()).map(data -> TimeUtil.formatTime(data.getPrison(), true)).orElse("0 секунд"));
+            put("stars", (player) -> users.data(player.getUniqueId()).map(data -> FormatUtil.starsFormat(data.getStars())).orElse(FormatUtil.starsFormat(0)));
+        }};
+        placeholders.forEach((identifier, function) -> new SimplePlaceholderAPIExpansion(identifier, function).register());
         RolePlayDataRepository repository = registry.get(RepositoryModule.class).getRepository();
         repository.subscribe(data -> {
             boardDataMap = data.getBoards().stream().map(this::wrap).collect(Collectors.toMap(
@@ -97,6 +109,11 @@ public class ScoreBoardModule implements Module {
                 }
             }
         });
+        Bukkit.getScheduler().runTaskTimer(rolePlay, () -> {
+            Bukkit.getOnlinePlayers().stream().map(player -> users.dataUnsafe(player.getUniqueId())).filter(Objects::nonNull).forEach(data -> {
+                setCurrentObjective(data.getUser(), data.inPrison() ? "prison" : "game");
+            });
+        }, 10, 10);
     }
 
     private void fill(Player player) {

@@ -10,65 +10,65 @@ import java.util.function.Consumer;
 
 public class SyncQueryFactory extends AbstractQueryFactory {
 
-	private final Consumer<Throwable> onCatch;
+    private final Consumer<Throwable> onCatch;
 
-	public SyncQueryFactory(HikariDataSource dataSource, Consumer<Throwable> onCatch) {
-		super(dataSource);
-		this.onCatch = onCatch;
-	}
+    public SyncQueryFactory(HikariDataSource dataSource, Consumer<Throwable> onCatch) {
+        super(dataSource);
+        this.onCatch = onCatch;
+    }
 
-	public QueryResult prepareGet(String query, Consumer<PreparedStatement> consumer) {
-		try {
-			return prepareGet0(query, consumer);
-		} catch (SQLException exc) {
-			onCatch.accept(exc);
-			return null;
-		}
-	}
+    public QueryResult prepareGet(String query, Consumer<PreparedStatement> consumer) {
+        try {
+            return prepareGet0(query, consumer);
+        } catch (SQLException exc) {
+            onCatch.accept(exc);
+            return null;
+        }
+    }
 
-	public int prepareUpdate(String query, Consumer<PreparedStatement> consumer) {
-		try {
-			return prepareUpdate0(query, consumer);
-		} catch (SQLException exc) {
-			onCatch.accept(exc);
-			return 0;
-		}
-	}
+    public int prepareUpdate(String query, Consumer<PreparedStatement> consumer) {
+        try {
+            return prepareUpdate0(query, consumer);
+        } catch (SQLException exc) {
+            onCatch.accept(exc);
+            return 0;
+        }
+    }
 
-	public int[] prepareBatch(String query, List<Consumer<PreparedStatement>> consumers) {
-		try {
-			return prepareBatch0(query, consumers);
-		} catch (SQLException exc) {
-			onCatch.accept(exc);
-			return new int[0];
-		}
-	}
+    public int[] prepareBatch(String query, List<Consumer<PreparedStatement>> consumers) {
+        try {
+            return prepareBatch0(query, consumers);
+        } catch (SQLException exc) {
+            onCatch.accept(exc);
+            return new int[0];
+        }
+    }
 
-	public QueryResult unsafeGet(String query) {
-		try {
-			return unsafeGet0(query);
-		} catch (SQLException exc) {
-			onCatch.accept(exc);
-			return null;
-		}
-	}
+    public QueryResult unsafeGet(String query) {
+        try {
+            return unsafeGet0(query);
+        } catch (SQLException exc) {
+            onCatch.accept(exc);
+            return null;
+        }
+    }
 
-	public int unsafeUpdate(String query) {
-		try {
-			return unsafeUpdate0(query);
-		} catch (SQLException exc) {
-			onCatch.accept(exc);
-			return 0;
-		}
-	}
+    public int unsafeUpdate(String query) {
+        try {
+            return unsafeUpdate0(query);
+        } catch (SQLException exc) {
+            onCatch.accept(exc);
+            return 0;
+        }
+    }
 
-	public int[] unsafeBatch(List<String> query) {
-		try {
-			return unsafeBatch0(query);
-		} catch (SQLException exc) {
-			onCatch.accept(exc);
-			return new int[0];
-		}
-	}
+    public int[] unsafeBatch(List<String> query) {
+        try {
+            return unsafeBatch0(query);
+        } catch (SQLException exc) {
+            onCatch.accept(exc);
+            return new int[0];
+        }
+    }
 
 }
