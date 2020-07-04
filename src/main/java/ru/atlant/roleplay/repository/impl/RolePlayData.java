@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ru.atlant.roleplay.work.Job;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +39,7 @@ public class RolePlayData {
     public static class FractionData {
 
         private String id, name;
-        private List<Job> jobs;
+        private List<JobData> jobs;
 
     }
 

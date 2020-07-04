@@ -8,15 +8,14 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import lombok.AllArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class TypeUser implements ArgumentType<UUID> {
-
-    private static final Collection<String> EXAMPLES = Arrays.asList("brgleb", "Notch");
 
     private static final DynamicCommandExceptionType INVALID_ONLINE = new DynamicCommandExceptionType(o -> new LiteralMessage("Игрок не онлайн: " + o));
     private static final DynamicCommandExceptionType INVALID_OFFLINE = new DynamicCommandExceptionType(o -> new LiteralMessage("Игрока не существует: " + o));
@@ -42,6 +41,6 @@ public class TypeUser implements ArgumentType<UUID> {
 
     @Override
     public Collection<String> getExamples() {
-        return EXAMPLES;
+        return Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());
     }
 }

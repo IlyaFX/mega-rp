@@ -5,9 +5,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.v1_12_R1.entity.CraftHumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.permissions.PermissibleBase;
 import org.bukkit.scheduler.BukkitTask;
 import ru.atlant.roleplay.RolePlay;
 import ru.atlant.roleplay.config.ConfigModule;
@@ -21,6 +24,8 @@ import ru.atlant.roleplay.work.Fraction;
 import ru.atlant.roleplay.work.Job;
 import ru.atlant.roleplay.work.WorksModule;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -80,7 +85,7 @@ public class UsersModule implements Module {
                 });
                 UserData data;
                 if (res.isEmpty()) {
-                    replaceFraction(uid, works.getDefaultFraction(), works.getDefaultJob());
+                    replaceJob(uid, works.getDefaultJob());
                     replaceViolation(uid, 0, 0);
                     data = new UserData(uid, works.getDefaultJob(), 0, 0);
                 } else {
@@ -97,12 +102,17 @@ public class UsersModule implements Module {
         events.registerListener(PlayerJoinEvent.class, event -> {
             UserData data = dataUnsafe(event.getPlayer().getUniqueId());
             subscribes.stream().filter(DataSubscriber::isHandleJoin).forEach(subscriber -> subscriber.getConsumer().accept(null, data));
+            injectPermissions(event.getPlayer(), new CustomPermissibleBase(event.getPlayer(), this));
         }, EventPriority.MONITOR, true);
     }
 
     public UsersModule subscribe(BiConsumer<UserData, UserData> consumer, boolean handleJoin) {
         subscribes.add(new DataSubscriber(consumer, handleJoin));
         return this;
+    }
+
+    public boolean hasPermission(UUID uuid, String permission) {
+        return data(uuid).map(data -> data.getJob().getAbilities().stream().anyMatch(ability -> ability.getPermissions().contains(permission))).orElse(false);
     }
 
     public void replaceViolation(UUID user, int stars, long prisonTime) {
@@ -126,7 +136,8 @@ public class UsersModule implements Module {
         });
     }
 
-    public void replaceFraction(UUID user, Fraction fraction, Job job) {
+    public void replaceJob(UUID user, Job job) {
+        Fraction fraction = job.getFraction();
         data(user).ifPresent(data -> {
             UserData old = data.clone();
             Job oldJob = data.getJob();
@@ -155,6 +166,20 @@ public class UsersModule implements Module {
 
     public UserData dataUnsafe(UUID user) {
         return usersMap.get(user);
+    }
+
+    private void injectPermissions(Player player, PermissibleBase permissibleBase) {
+        try {
+            CraftHumanEntity humanEntity = ((CraftHumanEntity) player);
+            Field permissionsField = CraftHumanEntity.class.getDeclaredField("perm");
+            permissionsField.setAccessible(true);
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(permissionsField, permissionsField.getModifiers() & ~Modifier.FINAL);
+            permissionsField.set(humanEntity, permissibleBase);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     @AllArgsConstructor
